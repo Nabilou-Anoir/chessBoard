@@ -131,13 +131,13 @@ const describePosition = (entry) => {
     <section class="panel">
       <h1>Plateau d'échecs</h1>
       <p class="hint">Faites glisser les pièces pour les déplacer librement.</p>
-      <button type="button" class="reset-button" @click="resetBoard">Réinitialiser</button>
+      <button type="button" class="reset-button" data-testid="reset-button" @click="resetBoard">Réinitialiser</button>
 
       <div class="status-grid">
         <article class="panel-card">
           <h2>Positions actuelles</h2>
           <p v-if="!trackedPositions.length" class="empty-state">Aucune pièce sur le plateau.</p>
-          <ul v-else class="positions-list">
+          <ul v-else class="positions-list" data-testid="positions-list">
             <li v-for="entry in trackedPositions" :key="entry.square">
               <span class="tag">{{ entry.square.toUpperCase() }}</span>
               <span>{{ describePosition(entry) }}</span>
@@ -148,7 +148,7 @@ const describePosition = (entry) => {
         <article class="panel-card">
           <h2>Historique des déplacements</h2>
           <p v-if="!moveHistory.length" class="empty-state">Déplacez une pièce pour lancer l'historique.</p>
-          <ol v-else class="history-list">
+          <ol v-else class="history-list" data-testid="history-list">
             <li v-for="(move, index) in moveHistory" :key="`${move.timestamp}-${index}`">
               <span class="tag">#{{ index + 1 }}</span>
               <span>{{ describeMove(move, index) }}</span>
@@ -158,12 +158,13 @@ const describePosition = (entry) => {
       </div>
     </section>
 
-    <section class="board" aria-label="Plateau d'échecs">
+    <section class="board" aria-label="Plateau d'échecs" data-testid="board">
       <div
         v-for="(square, index) in boardSquares"
         :key="square.id"
         class="square"
         :class="{ 'square--dark': square.isDark }"
+        :data-square-id="square.id"
         @dragover.prevent
         @drop="handleDrop($event, index)"
       >
@@ -171,6 +172,8 @@ const describePosition = (entry) => {
           v-if="square.piece"
           class="piece"
           :class="`piece--${square.piece.color}`"
+          :data-piece="square.piece.type"
+          :data-piece-color="square.piece.color"
           draggable="true"
           @dragstart="handleDragStart($event, index)"
           @dragend="handleDragEnd"
