@@ -8,6 +8,7 @@ pipeline {
 
   environment {
     NODE_ENV = 'test'
+    CI = 'true'
   }
 
   stages {
@@ -25,13 +26,43 @@ pipeline {
 
     stage('Tests unitaires') {
       steps {
-        sh 'npm run test'
+        sh '''
+          rm -rf html
+          npm run test
+        '''
+      }
+      post {
+        always {
+          publishHTML(target: [
+            allowMissing: false,
+            alwaysLinkToLastBuild: true,
+            keepAll: true,
+            reportDir: 'html',
+            reportFiles: 'index.html',
+            reportName: 'VitestReport'
+          ])
+        }
       }
     }
 
     stage('Tests UI') {
       steps {
-        sh 'npm run test:e2e'
+        sh '''
+          rm -rf playwright-report
+          npm run test:e2e
+        '''
+      }
+      post {
+        always {
+          publishHTML(target: [
+            allowMissing: true,
+            alwaysLinkToLastBuild: true,
+            keepAll: true,
+            reportDir: 'playwright-report',
+            reportFiles: 'index.html',
+            reportName: 'PlaywrightReport'
+          ])
+        }
       }
     }
   }
