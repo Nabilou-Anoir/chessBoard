@@ -9,6 +9,7 @@ pipeline {
   environment {
     NODE_ENV = 'test'
     CI = 'true'
+    NETLIFY_AUTH_TOKEN = credentials('NETLIFY_TOKEN')
   }
 
   stages {
@@ -63,6 +64,23 @@ pipeline {
             reportName: 'PlaywrightReport'
           ])
         }
+      }
+
+    }
+
+    stage('Deploy') {
+      environment {
+        NETLIFY_AUTH_TOKEN = credentials('NETLIFY_TOKEN')
+        NETLIFY_SITE_ID = 'ba1ba09b-55da-488b-ad8c-8146438cd159'
+      }
+      when {
+        branch 'main'
+      }
+      steps {
+        sh '''
+          echo "DEPLOY sur main"
+          npx netlify deploy --prod --auth "$NETLIFY_AUTH_TOKEN" --site="$NETLIFY_SITE_ID" --dir=dist
+        '''
       }
     }
   }
