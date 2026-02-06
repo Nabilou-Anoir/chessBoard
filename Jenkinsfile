@@ -1,17 +1,37 @@
-// nouveau
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'mcr.microsoft.com/playwright:v1.58.0-noble'
+      args '--network=host'
+    }
+  }
+
+  environment {
+    NODE_ENV = 'test'
+  }
 
   stages {
-    stage('step1') {
+    stage('Install') {
       steps {
-        echo 'Étape un'
+        sh 'npm ci'
       }
     }
 
-    stage('step2') {
+    stage('Build') {
       steps {
-        echo 'Étape deux'
+        sh 'npm run build'
+      }
+    }
+
+    stage('Tests unitaires') {
+      steps {
+        sh 'npm run test'
+      }
+    }
+
+    stage('Tests UI') {
+      steps {
+        sh 'npm run test:e2e'
       }
     }
   }
