@@ -30,18 +30,22 @@ test.describe('ChessBoard component', () => {
   })
 
   test('autorise les captures et remplace la pièce cible', async ({ page }) => {
-    const fromSquare = page.locator('[data-square-id="a2"] .piece')
-    const targetSquare = page.locator('[data-square-id="a7"]')
-
-    await fromSquare.dragTo(targetSquare)
+    // 1. White pawn e2 → e4
+    await page.locator('[data-square-id="e2"] .piece').dragTo(page.locator('[data-square-id="e4"]'))
+    // 2. Black pawn d7 → d5
+    await page.locator('[data-square-id="d7"] .piece').dragTo(page.locator('[data-square-id="d5"]'))
+    // 3. White pawn e4 captures d5
+    await page.locator('[data-square-id="e4"] .piece').dragTo(page.locator('[data-square-id="d5"]'))
 
     const historyEntries = page.getByTestId('history-list').locator('li')
-    await expect(historyEntries.first()).toContainText('a2 → a7')
-    await expect(historyEntries.first()).toContainText('capture noir Pion')
+    await expect(historyEntries).toHaveCount(3)
+    // The capture is the 3rd move (last entry)
+    await expect(historyEntries.nth(2)).toContainText('e4 → d5')
+    await expect(historyEntries.nth(2)).toContainText('capture noir Pion')
 
     const positionsList = page
       .getByTestId('positions-list')
-      .locator('li', { hasText: 'A7' })
+      .locator('li', { hasText: 'D5' })
     await expect(positionsList).toContainText('Blanc Pion')
   })
 })
