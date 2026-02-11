@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import ChessService from './services/ChessService'
+import ChessTracker from './services/ChessTracker'
 
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 const ranks = [8, 7, 6, 5, 4, 3, 2, 1]
@@ -46,17 +46,72 @@ const initialPieceFor = (rowIndex, fileIndex) => {
   return null
 }
 
+
 const boardSquares = ref(createInitialBoard())
 const draggingPiece = ref(null)
 const originIndex = ref(null)
 
-const tracker = ref(new ChessService(boardSquares.value))
+const tracker = ref(new ChessTracker(boardSquares.value))
 const trackedPositions = ref(tracker.value.getPositions())
 const moveHistory = ref(tracker.value.getHistory())
+
+// Met à jour le plateau visuel à partir de chess.js
+const updateBoardFromChessJS = () => {
+  // Récupère la position FEN de chess.js
+  const chess = tracker.value.chess
+  const fen = chess.fen().split(' ')[0]
+  const pieceMap = {
+    p: { type: 'pawn', color: 'black' },
+    r: { type: 'rook', color: 'black' },
+    n: { type: 'knight', color: 'black' },
+    b: { type: 'bishop', color: 'black' },
+    q: { type: 'queen', color: 'black' },
+    k: { type: 'king', color: 'black' },
+    P: { type: 'pawn', color: 'white' },
+    R: { type: 'rook', color: 'white' },
+    N: { type: 'knight', color: 'white' },
+    B: { type: 'bishop', color: 'white' },
+    Q: { type: 'queen', color: 'white' },
+    K: { type: 'king', color: 'white' }
+  }
+  const squares = []
+  let fileIdx = 0
+  let rankIdx = 0
+  for (const char of fen) {
+    if (char === '/') {
+      fileIdx = 0
+      rankIdx++
+      continue
+    }
+    if (char >= '1' && char <= '8') {
+      for (let i = 0; i < Number(char); i++) {
+        squares.push({
+          id: `${files[fileIdx]}${ranks[rankIdx]}`,
+          file: files[fileIdx],
+          rank: ranks[rankIdx],
+          isDark: (rankIdx + fileIdx) % 2 === 1,
+          piece: null
+        })
+        fileIdx++
+      }
+    } else {
+      squares.push({
+        id: `${files[fileIdx]}${ranks[rankIdx]}`,
+        file: files[fileIdx],
+        rank: ranks[rankIdx],
+        isDark: (rankIdx + fileIdx) % 2 === 1,
+        piece: pieceMap[char]
+      })
+      fileIdx++
+    }
+  }
+  boardSquares.value = squares
+}
 
 const syncTracker = () => {
   trackedPositions.value = tracker.value.getPositions()
   moveHistory.value = tracker.value.getHistory()
+  updateBoardFromChessJS()
 }
 
 const handleDragStart = (event, index) => {
@@ -83,15 +138,11 @@ const handleDrop = (event, index) => {
   const movingPiece = draggingPiece.value
   const capturedPiece = targetSquare.piece
 
-  boardSquares.value = boardSquares.value.map((square, idx) => {
-    if (idx === originIndex.value) {
-      return { ...square, piece: null }
-    }
-    if (idx === index) {
-      return { ...square, piece: movingPiece }
-    }
-    return square
-  })
+  // Vérifie la légalité du coup avec chess.js
+  if (!tracker.value.isMoveLegal(sourceSquare.id, targetSquare.id)) {
+    clearDragState()
+    return
+  }
 
   tracker.value.recordMove(sourceSquare.id, targetSquare.id, movingPiece, capturedPiece)
   syncTracker()
@@ -106,8 +157,7 @@ const clearDragState = () => {
 }
 
 const resetBoard = () => {
-  boardSquares.value = createInitialBoard()
-  tracker.value.reset(boardSquares.value)
+  tracker.value.reset(createInitialBoard())
   syncTracker()
   clearDragState()
 }
